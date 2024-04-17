@@ -1,5 +1,6 @@
 package guru.springframework.reactivemongo.services;
 
+import guru.springframework.reactivemongo.domain.Beer;
 import guru.springframework.reactivemongo.mappers.BeerMapper;
 import guru.springframework.reactivemongo.model.BeerDTO;
 import guru.springframework.reactivemongo.repositories.BeerRepository;
@@ -57,7 +58,7 @@ public class BeerServiceImpl implements BeerService {
 
     @Override
     public Mono<BeerDTO> updateBeer(String beerId, BeerDTO beerDTO) {
-        return beerRepository.findById(beerId)
+        Mono<Beer> updatedDtoMono= beerRepository.findById(beerId)
                 .map(foundBeer -> {
                     //update properties
                     foundBeer.setBeerName(beerDTO.getBeerName());
@@ -67,8 +68,15 @@ public class BeerServiceImpl implements BeerService {
                     foundBeer.setQuantityOnHand(beerDTO.getQuantityOnHand());
 
                     return foundBeer;
-                }).flatMap(beerRepository::save)
-                .map(beerMapper::beerToBeerDto);
+                });
+        Mono<Beer> savedBeerMono = updatedDtoMono.flatMap(beerEntity -> beerRepository.save(beerEntity));
+        Mono<BeerDTO> savedBeerDtoMono= savedBeerMono.map(
+                x->beerMapper.beerToBeerDto(x)
+                );
+
+//                .flatMap(beerRepository::save)
+//                .map(beerMapper::beerToBeerDto);
+        return savedBeerDtoMono;
     }
 
     @Override
